@@ -1,0 +1,61 @@
+version: '3.8'
+networks:
+    mongo-net:
+        name: mongo-net
+services:
+    mongo-replica-1:
+        hostname: mongo-replica-1
+        container_name: mongo-replica-1
+        image: mongo:5.0.12
+        command: mongod --replSet rs --journal --bind_ip_all
+        ports:
+            - "27018:27017"
+        restart: always
+        networks:
+            - mongo-net
+    mongo-replica-2:
+        hostname: mongo-replica-2
+        container_name: mongo-replica-2
+        image: mongo:5.0.12
+        command: mongod --replSet rs --journal --bind_ip_all
+        ports:
+            - "27019:27017"
+        restart: always
+        networks:
+            - mongo-net
+
+    mongo-primary:
+        hostname: mongo-primary
+        container_name: mongo-primary
+        depends_on:
+            - mongo-replica-1
+            - mongo-replica-2
+        image: mongo:5.0.12
+        command: mongod --replSet rs --journal --bind_ip_all
+        ports:
+            - "27017:27017"
+        links:
+            - mongo-replica-1
+            - mongo-replica-2
+        restart: always
+        networks:
+            - mongo-net
+        healthcheck:
+            test: test $$(echo "rs.initiate({_id:'rs',members:[{_id:0,host:\"mongo-primary:27017\",priority:2},{_id:1,host:\"mongo-replica-1:27017\",priority:0},{_id:2,host:\"mongo-replica-2:27017\",priority:0}]}).ok || rs.status().ok" | mongo --port 27017 --quiet) -eq 1
+            interval: 10s
+            start_period: 30s
+        volumes:
+            - ./src/main/resources/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+
+    postgres-db:
+        image: postgres:15.3-alpine
+        container_name: postgres-db
+        ports:
+            - "5432:5432"
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: root
+
+
+
+

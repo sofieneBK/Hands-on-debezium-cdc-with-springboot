@@ -1,0 +1,20 @@
+spring:
+  profiles:
+    active: local
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: root
+  data:
+    mongodb:
+      uri: "mongodb://localhost:27017/"
+      database: test
+  jpa:
+    hibernate:
+      ddl-auto: update
+database:
+  include:
+    list: test
+collection:
+  include:
+    list: "test.books,test.computers,test.phones"
